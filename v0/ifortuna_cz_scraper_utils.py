@@ -1,29 +1,31 @@
 # utils for ifortuna.cz scraper
-from lxml import html, etree
+from lxml import html
 import re
 import requests
 
 import settings
 
+
 def scrape_dir(fdir):
     url = settings.fortuna_url + fdir + settings.fortuna_params
     r = requests.get(url)
-    data = []
+    data = list()
     if r.status_code == 200:
-        new_text = r.text.replace('<?xml version="1.0" encoding="utf-8"?>\r\n','')
+        new_text = r.text.replace('<?xml version="1.0" encoding="utf-8"?>\r\n', '')
         domtree = html.fromstring(new_text)
 
         divs = domtree.xpath('//div[@class="gradient_table"]')
         for div in divs:
             try:
-                group = {}
-                group['identifier'] = re.search('bet-table-holder-(\d{1,})',div.xpath('@id')[0]).group(1)
+                group = dict()
+                group['identifier'] = re.search('bet-table-holder-(\d{1,})', div.xpath('@id')[0]).group(1)
                 group['title'] = ''.join(div.xpath('div/h3')[0].itertext()).strip()
                 try:
                     group['title_comment'] = div.xpath('div/p')[0].text
                 except:
                     group['title_comment'] = ""
-                group['title_bet'] = div.xpath('div/div/table/thead/tr[@class="header-row"]/th[@class="col_title_info"]/a')[0].text.strip()
+                group['title_bet'] = \
+                div.xpath('div/div/table/thead/tr[@class="header-row"]/th[@class="col_title_info"]/a')[0].text.strip()
 
                 ths = div.xpath('div/div/table/thead/tr[@class="header-row"]/th[@class="col_bet"]')
                 group['bets'] = []
@@ -48,7 +50,8 @@ def scrape_dir(fdir):
                         ass = tr.xpath('td[@class="col_bet "]/a')
                         for a in ass:
                             item['bets'].append("".join(a.itertext()).strip())
-                        item['date_bet'] = ''.join(tr.xpath('td[@class="col_date sorted_column"]/span')[0].itertext()).strip()
+                        item['date_bet'] = ''.join(
+                            tr.xpath('td[@class="col_date sorted_column"]/span')[0].itertext()).strip()
                         rows.append(item)
                     except:
                         nothing = None
@@ -58,9 +61,11 @@ def scrape_dir(fdir):
                 nothing = None
     return data
 
+
 if __name__ == "__main__":
     # test:
-    fdirs = ['basketbal','volejbal','fotbal','hokej','tenis-muzi','tenis-zeny','hazena','ameircky-fotbal','ragby','zabava']
+    fdirs = ['basketbal', 'volejbal', 'fotbal', 'hokej', 'tenis-muzi', 'tenis-zeny', 'hazena', 'ameircky-fotbal',
+             'ragby', 'zabava']
     for fdir in fdirs:
         data = scrape_dir(fdir)
         print(data)

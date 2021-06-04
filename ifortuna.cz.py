@@ -2,13 +2,13 @@
 
 import csv
 import datetime
-from lxml import html, etree
+from lxml import html
 import requests
 
 now = datetime.datetime.utcnow().isoformat()
 
 url_base = "https://www.ifortuna.cz/bets/ajax/loadmoresport/"
-url_dir = "politika"
+url_dir = "hokej"
 url_params = "page="
 
 header = ['date', 'market_title', 'title', 'identifier', 'odd_name', 'value']
@@ -17,19 +17,19 @@ competition_header = ['id', 'name', 'sport_id', 'sport', 'created_at']
 
 def _update_competition(competition):
     update = True
-    with open("./competitions.csv") as f:   
+    with open("./competitions.csv", encoding='utf-8') as f:
         dr = csv.DictReader(f) 
         for row in dr:
             ro = row
             del ro['created_at']
             if ro['id'] == competition['id']:
                 update = False
-    with open("./competitions.csv", "a") as f: 
+    with open("./competitions.csv", "a", encoding='utf-8') as f:
         if update:
             dw = csv.DictWriter(f, competition_header)
             competition['created_at'] = datetime.datetime.now().isoformat()
             dw.writerow(competition)
-            with open("data/" + competition['id'] + ".csv", "w") as fout:
+            with open("data/" + competition['id'] + ".csv", "w", encoding='utf-8') as fout:
                 dw = csv.DictWriter(fout, header)
                 dw.writeheader()
             
@@ -75,8 +75,14 @@ while next:
                         items = []
                         for tr in trs:
                             item = {'odds': []}
-                            item['title'] = tr.xpath('./td[@class="col-title"]')[0].attrib['data-value']
-                            item['identifier'] = tr.xpath('.//span[@class="event-info-number"]')[0].text.strip()
+                            try:
+                                item['title'] = tr.xpath('./td[@class="col-title"]')[0].attrib['data-value']
+                            except IndexError:
+                                item['title'] = 'None'
+                            try:
+                                item['identifier'] = tr.xpath('.//span[@class="event-info-number"]')[0].text.strip()
+                            except IndexError:
+                                item['identifier'] = None
                             tds = tr.xpath('./td[@class="col-odds"]')
                             for td in tds:
                                 a = td.xpath('./a')[0]
@@ -87,9 +93,12 @@ while next:
                                     })
                                 except:
                                     nothing = 'disabled'
-                            item['date'] = tr.xpath('./td[@class="col-date"]')[0].attrib['data-value']
+                            try:
+                                item['date'] = tr.xpath('./td[@class="col-date"]')[0].attrib['data-value']
+                            except IndexError:
+                                item['date'] = None
                             items.append(item)
-                        with open("data/" + competition['id'] + ".csv", "a") as fout:
+                        with open("data/" + competition['id'] + ".csv", "a", encoding='utf-8') as fout:
                             dw = csv.DictWriter(fout, header)
                             for item in items:
                                 index = 0
